@@ -4,6 +4,8 @@ project:
 data:
   root: /storage/student7/cmt/data/archive
   tamper_metadata_dir: tampering_types
+  use_clean_manifest: true
+  clean_manifest_dir: /storage/student7/cmt/resnet_h95/archive_clean_pairhash_manifest_v1
   train_sets: [DocTamperV1-TrainingSet]
   test_sets:
     TestingSet: DocTamperV1-TestingSet

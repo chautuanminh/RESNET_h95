@@ -333,6 +333,35 @@ def _write_dummy_training_outputs(
     write_json(run_dir / "checkpoints" / "best_model.pth", payload)
 
 
+def _amp_dry_run(model, optimizer, criterion, config: dict[str, Any], runtime: dict[str, Any], device, amp_dtype) -> None:
+    """Exercise the AMP path once to detect an unsupported dtype (e.g. bf16) before training.
+
+    Runs one forward+backward on synthetic data in eval mode (so BatchNorm running stats are
+    not touched) and clears grads without stepping the optimizer. Lets _torch_train fall back
+    from bf16 to fp16 when the dtype is unsupported. See instructions/gpu_optimization.md (3).
+    """
+    import torch  # type: ignore
+
+    in_channels = int(deep_get(config, "model.in_channels", 2))
+    image_size = int(deep_get(config, "preprocessing.image_size", 512))
+    classes = int(deep_get(config, "model.classes", 1))
+    x = torch.randn(2, in_channels, image_size, image_size, device=device)
+    if runtime["device"] == "cuda" and runtime.get("channels_last"):
+        x = x.contiguous(memory_format=torch.channels_last)
+    y = torch.rand(2, classes, image_size, image_size, device=device)
+    was_training = model.training
+    model.eval()
+    try:
+        with torch.amp.autocast("cuda", dtype=amp_dtype, enabled=True):
+            logits = model(x)
+            loss = criterion(logits, y)
+        loss.backward()
+    finally:
+        optimizer.zero_grad(set_to_none=True)
+        if was_training:
+            model.train()
+
+
 def _torch_train(
     config: dict[str, Any],
     train_indices: list[int],
@@ -392,6 +421,17 @@ def _torch_train(
     effective_batch = batch_size * grad_accum
     amp_dtype = amp_dtype_for_torch(torch, runtime)
     autocast_enabled = bool(runtime.get("amp") and runtime["device"] == "cuda" and runtime.get("amp_dtype") != "float32")
+    if autocast_enabled and runtime.get("amp_dtype") == "bfloat16":
+        try:
+            _amp_dry_run(model, optimizer, criterion, config, runtime, device, amp_dtype)
+            log("BF16 AMP dry-run OK")
+        except RuntimeError as exc:
+            log(f"BF16 dry-run failed ({exc}); falling back to FP16 + GradScaler")
+            runtime["amp_dtype"] = "float16"
+            runtime["use_grad_scaler"] = True
+            amp_dtype = amp_dtype_for_torch(torch, runtime)
+            scaler = torch.amp.GradScaler("cuda", enabled=True)
+            write_gpu_profile(run_dir / "gpu_profile.txt", runtime)
     log_interval = max(1, int(deep_get(config, "training.log_interval_batches", 50)))
     total_epochs = int(deep_get(config, "training.epochs", 35))
     train_rows: list[dict[str, Any]] = []
