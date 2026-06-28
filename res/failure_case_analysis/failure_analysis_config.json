@@ -1,0 +1,53 @@
+{
+  "CALIBRATION_GAP_THRESHOLD": 0.15,
+  "CHECKPOINT_PATH": "res\\doctamper_resnet34_h95_35epochs_comparison\\checkpoints\\best_model.pth",
+  "CONNECTIVITY": 4,
+  "DEFAULT_THRESHOLD": 0.5,
+  "EPS": 1e-08,
+  "FRAGMENTATION_MIN_BLOBS": 5,
+  "FRAGMENTATION_MULTIPLIER": 3,
+  "GOOD_F1_THRESHOLD": 0.85,
+  "GOOD_IOU_THRESHOLD": 0.75,
+  "H95_RATIO_EPS": 1e-08,
+  "LOW_PRECISION_THRESHOLD": 0.5,
+  "LOW_RECALL_THRESHOLD": 0.5,
+  "OVER_EXPANSION_RATIO": 1.8,
+  "PANEL_LAYOUT": "2x5",
+  "PLOTS": [
+    "worst200_f1_distribution.png",
+    "failure_category_counts.png",
+    "severity_counts_by_test_set.png",
+    "raw_category_counts.png",
+    "precision_recall_scatter.png",
+    "threshold_gap_distribution.png",
+    "pred_gt_area_ratio_vs_f1.png",
+    "h95_signal_ratio_vs_f1.png",
+    "confusion_totals_by_test_set.png"
+  ],
+  "PRED_MUCH_LARGER_RATIO": 3.0,
+  "PRED_MUCH_SMALLER_RATIO": 0.3,
+  "PRIMARY_SCENARIO": "no_blob",
+  "SAVE_PANELS": true,
+  "SAVE_THRESHOLD_SWEEP": true,
+  "SELECTED_IMAGES": 6,
+  "SORT_KEYS": [
+    "f1",
+    "iou",
+    "dataset_index"
+  ],
+  "SOURCE_CONFIG_PATH": "configs\\test_tiny.yaml",
+  "STRONG_H95_RATIO": 2.0,
+  "TEST_SETS": [
+    "TestingSet",
+    "FCD",
+    "SCD"
+  ],
+  "THRESHOLD_MAX": 0.99,
+  "THRESHOLD_MIN": 0.01,
+  "THRESHOLD_STEP": 0.01,
+  "THRESHOLD_SWEEP_ROWS": 594,
+  "TINY_TAMPER_AREA": 500,
+  "TOP_K_PER_SET": 2,
+  "UNDER_EXPANSION_RATIO": 0.55,
+  "WEAK_H95_RATIO": 1.2
+}

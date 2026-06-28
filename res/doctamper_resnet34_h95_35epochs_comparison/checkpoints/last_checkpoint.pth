@@ -1,0 +1,125 @@
+{
+  "backend": "dummy",
+  "best_score": 1.0,
+  "checkpoint_selection_source": "internal_validation_only",
+  "config": {
+    "_config_path": "configs\\test_tiny.yaml",
+    "data": {
+      "root": "synthetic",
+      "synthetic": {
+        "counts": {
+          "DocTamperV1-FCD": 4,
+          "DocTamperV1-SCD": 5,
+          "DocTamperV1-TestingSet": 6,
+          "DocTamperV1-TrainingSet": 30,
+          "FCD": 4,
+          "SCD": 5,
+          "TestingSet": 6,
+          "TrainingSet": 30
+        },
+        "default_count": 6,
+        "enabled": true
+      },
+      "tamper_metadata_dir": "tampering_types",
+      "test_sets": {
+        "FCD": "DocTamperV1-FCD",
+        "SCD": "DocTamperV1-SCD",
+        "TestingSet": "DocTamperV1-TestingSet"
+      },
+      "train_sets": [
+        "DocTamperV1-TrainingSet"
+      ]
+    },
+    "evaluation": {
+      "batch_size": 2,
+      "histogram_bins": 32,
+      "official_threshold": 0.5,
+      "save_examples_per_set": 3,
+      "threshold_max": 0.99,
+      "threshold_min": 0.01,
+      "threshold_step": 0.01
+    },
+    "failure_analysis": {
+      "output_dir": "failure_case_analysis",
+      "top_k": 2
+    },
+    "gpu": {
+      "amp": false,
+      "amp_dtype": "float32",
+      "auto_tune_batch_size": false,
+      "auto_tune_memory_fraction": 0.86,
+      "batch_size_candidates": [
+        2
+      ],
+      "channels_last": false,
+      "cudnn_benchmark": false,
+      "device": "cuda",
+      "single_gpu": true,
+      "tf32": false,
+      "torch_compile": false
+    },
+    "model": {
+      "activation": null,
+      "allow_dummy": true,
+      "classes": 1,
+      "encoder_name": "resnet34",
+      "encoder_weights": "imagenet",
+      "force_dummy": true,
+      "in_channels": 2,
+      "input_mode": "gray_h95",
+      "name": "resnet34_unet"
+    },
+    "output": {
+      "root_dir": "res",
+      "run_dir": "doctamper_resnet34_h95_35epochs_comparison"
+    },
+    "preprocessing": {
+      "image_size": 64,
+      "jpeg_quality": 95
+    },
+    "project": {
+      "name": "resnet34_h95_tiny_smoke"
+    },
+    "runtime": {
+      "dummy": true
+    },
+    "split": {
+      "seed": 42,
+      "val_count": 6
+    },
+    "tampering_type_analysis": {
+      "enable_heuristic_classifier": true,
+      "enabled": true,
+      "heuristic_confidence_threshold": 0.6,
+      "max_patch_search_candidates": 10,
+      "min_mask_pixels_for_heuristic": 20,
+      "official_threshold": 0.5,
+      "output_dir": "tampering_type_analysis",
+      "patch_similarity_search": false,
+      "random_seed": 42,
+      "save_examples_per_type": 2,
+      "threshold_max": 0.99,
+      "threshold_min": 0.01,
+      "threshold_step": 0.01,
+      "use_metadata_if_available": true,
+      "worst_k_per_type": 2
+    },
+    "training": {
+      "batch_size": 2,
+      "epochs": 1,
+      "eta_min": 1e-06,
+      "gradient_accumulation_steps": 1,
+      "gradient_clip_norm": 1.0,
+      "log_interval_batches": 1,
+      "lr": 0.0001,
+      "optimizer": "adamw",
+      "scheduler": "cosine",
+      "weight_decay": 0.0001
+    },
+    "validation": {
+      "require_outputs": "auto"
+    }
+  },
+  "epoch": 1,
+  "resume": ""
+}

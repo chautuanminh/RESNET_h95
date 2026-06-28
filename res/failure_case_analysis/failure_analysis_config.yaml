@@ -1,0 +1,33 @@
+TEST_SETS: [TestingSet, FCD, SCD]
+TOP_K_PER_SET: 2
+PRIMARY_SCENARIO: no_blob
+SORT_KEYS: [f1, iou, dataset_index]
+DEFAULT_THRESHOLD: 0.5
+THRESHOLD_MIN: 0.01
+THRESHOLD_MAX: 0.99
+THRESHOLD_STEP: 0.01
+EPS: 1e-08
+GOOD_F1_THRESHOLD: 0.85
+GOOD_IOU_THRESHOLD: 0.75
+LOW_RECALL_THRESHOLD: 0.5
+LOW_PRECISION_THRESHOLD: 0.5
+OVER_EXPANSION_RATIO: 1.8
+UNDER_EXPANSION_RATIO: 0.55
+CALIBRATION_GAP_THRESHOLD: 0.15
+FRAGMENTATION_MULTIPLIER: 3
+FRAGMENTATION_MIN_BLOBS: 5
+TINY_TAMPER_AREA: 500
+PRED_MUCH_LARGER_RATIO: 3.0
+PRED_MUCH_SMALLER_RATIO: 0.3
+STRONG_H95_RATIO: 2.0
+WEAK_H95_RATIO: 1.2
+H95_RATIO_EPS: 1e-08
+CONNECTIVITY: 4
+PANEL_LAYOUT: 2x5
+SAVE_PANELS: true
+SAVE_THRESHOLD_SWEEP: true
+PLOTS: [worst200_f1_distribution.png, failure_category_counts.png, severity_counts_by_test_set.png, raw_category_counts.png, precision_recall_scatter.png, threshold_gap_distribution.png, pred_gt_area_ratio_vs_f1.png, h95_signal_ratio_vs_f1.png, confusion_totals_by_test_set.png]
+SELECTED_IMAGES: 6
+THRESHOLD_SWEEP_ROWS: 594
+CHECKPOINT_PATH: res\doctamper_resnet34_h95_35epochs_comparison\checkpoints\best_model.pth
+SOURCE_CONFIG_PATH: configs\test_tiny.yaml

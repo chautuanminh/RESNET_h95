@@ -1,0 +1,13 @@
+# GPU Profile
+
+- device: cpu
+- gpu_name: none
+- amp_dtype: float32
+- use_grad_scaler: False
+- amp: False
+- torch_compile: False
+- torch_compile_mode: reduce-overhead
+- channels_last: False
+- tf32: False
+- cudnn_benchmark: False
+- total_memory_gb: 0.0

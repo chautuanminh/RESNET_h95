@@ -1,0 +1,2 @@
+epoch,train_loss,val_loss,train_f1,val_f1,train_images_per_sec,val_images_per_sec,gpu_allocated_gb,gpu_reserved_gb,gpu_max_reserved_gb,gpu_max_reserved_percent,batch_size,effective_batch_size,amp_dtype,lr
+1,0.5,0.4,1.0,1.0,0,0,0,0,0,0,2,2,float32,0.0001

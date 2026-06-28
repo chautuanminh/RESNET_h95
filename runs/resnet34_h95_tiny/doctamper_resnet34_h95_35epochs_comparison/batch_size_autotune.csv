@@ -1,0 +1,2 @@
+candidate_batch_size,status,device,gpu_name,amp_dtype,peak_reserved_gb,peak_reserved_percent,memory_fraction,selected,note
+2,disabled,cpu,none,float32,0.0,0.0,0.0,yes,autotuning disabled or CUDA unavailable

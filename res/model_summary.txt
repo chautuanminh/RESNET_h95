@@ -1,0 +1,10 @@
+model name: ResNet34-H95 UNet
+method: grayscale + H95
+configured model name: resnet34_unet
+encoder name: resnet34
+encoder weights: imagenet
+input mode: gray_h95
+input channels: 2
+output classes: 1
+first convolution weight shape: [64, 2, 7, 7]
+first conv has exactly 2 input channels: yes

@@ -1,0 +1,96 @@
+project:
+  name: resnet34_h95_tiny_smoke
+runtime:
+  dummy: true
+data:
+  root: synthetic
+  tamper_metadata_dir: tampering_types
+  train_sets: [DocTamperV1-TrainingSet]
+  test_sets:
+    TestingSet: DocTamperV1-TestingSet
+    FCD: DocTamperV1-FCD
+    SCD: DocTamperV1-SCD
+  synthetic:
+    enabled: true
+    default_count: 6
+    counts:
+      DocTamperV1-TrainingSet: 30
+      TrainingSet: 30
+      DocTamperV1-TestingSet: 6
+      TestingSet: 6
+      DocTamperV1-FCD: 4
+      FCD: 4
+      DocTamperV1-SCD: 5
+      SCD: 5
+split:
+  seed: 42
+  val_count: 6
+preprocessing:
+  image_size: 64
+  jpeg_quality: 95
+model:
+  name: resnet34_unet
+  encoder_name: resnet34
+  encoder_weights: imagenet
+  input_mode: gray_h95
+  in_channels: 2
+  classes: 1
+  activation: null
+  allow_dummy: true
+  force_dummy: true
+training:
+  epochs: 1
+  batch_size: 2
+  gradient_accumulation_steps: 1
+  optimizer: adamw
+  lr: 0.0001
+  weight_decay: 0.0001
+  scheduler: cosine
+  eta_min: 1e-06
+  gradient_clip_norm: 1.0
+  log_interval_batches: 1
+gpu:
+  device: cuda
+  single_gpu: true
+  amp: false
+  amp_dtype: float32
+  tf32: false
+  cudnn_benchmark: false
+  channels_last: false
+  torch_compile: false
+  auto_tune_batch_size: false
+  auto_tune_memory_fraction: 0.86
+  batch_size_candidates: [2]
+evaluation:
+  official_threshold: 0.5
+  threshold_min: 0.01
+  threshold_max: 0.99
+  threshold_step: 0.01
+  histogram_bins: 32
+  batch_size: 2
+  save_examples_per_set: 3
+failure_analysis:
+  top_k: 2
+  output_dir: failure_case_analysis
+tampering_type_analysis:
+  enabled: true
+  output_dir: tampering_type_analysis
+  official_threshold: 0.5
+  threshold_min: 0.01
+  threshold_max: 0.99
+  threshold_step: 0.01
+  worst_k_per_type: 2
+  save_examples_per_type: 2
+  use_metadata_if_available: true
+  enable_heuristic_classifier: true
+  min_mask_pixels_for_heuristic: 20
+  heuristic_confidence_threshold: 0.6
+  patch_similarity_search: false
+  max_patch_search_candidates: 10
+  random_seed: 42
+output:
+  root_dir: runs/resnet34_h95_tiny
+  run_dir: doctamper_resnet34_h95_35epochs_comparison
+validation:
+  require_outputs: auto
+_config_path: configs\test_tiny.yaml

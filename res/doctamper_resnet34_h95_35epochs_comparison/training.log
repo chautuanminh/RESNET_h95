@@ -1,0 +1,7 @@
+[2026-06-03 16:21:54] Training setup: config=configs/test_tiny.yaml
+[2026-06-03 16:21:54] Runtime: device=cpu gpu=none amp=False amp_dtype=float32 channels_last=False torch_compile=False
+[2026-06-03 16:21:54] Selected batch size: 2
+[2026-06-03 16:21:54] Split: train=24 val=6
+[2026-06-03 16:21:54] Dry run OK: input=[2, 2, 64, 64] logits=[2, 1, 64, 64]
+[2026-06-03 16:21:54] Epoch 1/1: dummy train_loss=0.5000 val_f1=1.0000
+[2026-06-03 16:21:54] Training finished.

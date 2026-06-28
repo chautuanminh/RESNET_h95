@@ -1,0 +1,3 @@
+tamper_type,num_images,mean_mask_area_ratio,mean_h95_inside_outside_ratio,mean_error_area_ratio
+generation,4,0.014404296875,1.4215305479431208,0.1048583984375
+copy_move,11,0.01922052556818182,1.7861784729503436,0.123046875

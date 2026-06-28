@@ -1,0 +1,98 @@
+project:
+  name: resnet34_h95_doctamper
+
+data:
+  root: /storage/student7/cmt/data/archive
+  tamper_metadata_dir: tampering_types
+  train_sets: [DocTamperV1-TrainingSet]
+  test_sets:
+    TestingSet: DocTamperV1-TestingSet
+    FCD: DocTamperV1-FCD
+    SCD: DocTamperV1-SCD
+  synthetic:
+    enabled: false
+
+split:
+  seed: 42
+  val_count: 10000
+
+preprocessing:
+  image_size: 512
+  jpeg_quality: 95
+
+model:
+  name: resnet34_unet
+  encoder_name: resnet34
+  encoder_weights: imagenet
+  input_mode: gray_h95
+  in_channels: 2
+  classes: 1
+  activation: null
+  allow_dummy: false
+  force_dummy: false
+
+training:
+  epochs: 35
+  batch_size: 16
+  gradient_accumulation_steps: 1
+  optimizer: adamw
+  lr: 0.0003
+  weight_decay: 0.0001
+  scheduler: cosine
+  eta_min: 0.000001
+  gradient_clip_norm: 1.0
+  num_workers: 8
+  pin_memory: true
+  persistent_workers: true
+  prefetch_factor: 2
+  log_interval_batches: 50
+
+gpu:
+  device: cuda
+  single_gpu: true
+  amp: true
+  amp_dtype: auto
+  tf32: true
+  cudnn_benchmark: true
+  channels_last: true
+  torch_compile: false
+  auto_tune_batch_size: true
+  auto_tune_memory_fraction: 0.86
+  batch_size_candidates: [8, 12, 16, 20, 24, 28, 32, 40, 48, 56, 64]
+
+evaluation:
+  official_threshold: 0.5
+  threshold_min: 0.01
+  threshold_max: 0.99
+  threshold_step: 0.01
+  histogram_bins: 512
+  batch_size: 64
+  save_examples_per_set: 24
+
+failure_analysis:
+  top_k: 200
+  output_dir: failure_case_analysis
+
+tampering_type_analysis:
+  enabled: true
+  output_dir: tampering_type_analysis
+  official_threshold: 0.5
+  threshold_min: 0.01
+  threshold_max: 0.99
+  threshold_step: 0.01
+  worst_k_per_type: 50
+  save_examples_per_type: 24
+  use_metadata_if_available: true
+  enable_heuristic_classifier: true
+  min_mask_pixels_for_heuristic: 20
+  heuristic_confidence_threshold: 0.6
+  patch_similarity_search: true
+  max_patch_search_candidates: 200
+  random_seed: 42
+
+output:
+  root_dir: /storage/student7/runs/resnet34_h95
+  run_dir: doctamper_resnet34_h95_35epochs_comparison
+
+validation:
+  require_outputs: true
