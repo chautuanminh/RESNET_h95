@@ -1,0 +1,10 @@
+# Local mirror of the precomputed clean pair-hash leakage artifact.
+# Canonical copy lives on Drive/Colab; do not commit the bulky CSVs.
+archive_clean_pairhash_manifest_v1/
+
+# Windows Drive-for-Desktop cruft
+**/desktop.ini
+
+# Python
+__pycache__/
+*.pyc

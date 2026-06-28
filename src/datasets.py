@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import csv
 from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
@@ -292,7 +293,103 @@ def _np():
     return np
 
 
+CLEAN_TRAIN_MANIFEST = "clean_internal_train_manifest.csv"
+CLEAN_VAL_MANIFEST = "clean_internal_val_manifest.csv"
+
+
+def use_clean_manifest(config: dict[str, Any]) -> bool:
+    """True when leakage-controlled clean pair-hash manifests should drive sample selection."""
+    return bool(deep_get(config, "data.use_clean_manifest", False))
+
+
+def clean_manifest_dir(config: dict[str, Any]) -> Path:
+    raw = str(deep_get(config, "data.clean_manifest_dir", "") or "").strip()
+    if not raw:
+        raise ValueError(
+            "data.use_clean_manifest is true but data.clean_manifest_dir is empty. "
+            "Point it at the archive_clean_pairhash_manifest_v1 directory."
+        )
+    path = Path(raw)
+    if not path.exists():
+        raise FileNotFoundError(f"Clean manifest directory not found: {path}")
+    return path
+
+
+def _read_manifest_rows(csv_path: Path) -> list[dict[str, str]]:
+    if not csv_path.exists():
+        raise FileNotFoundError(f"Clean manifest not found: {csv_path}")
+    with csv_path.open("r", encoding="utf-8", newline="") as handle:
+        return list(csv.DictReader(handle))
+
+
+def _manifest_indices(rows: list[dict[str, str]], folder: str | None = None) -> list[int]:
+    seen: set[int] = set()
+    for row in rows:
+        if folder is not None and row.get("source_dataset_name") != folder:
+            continue
+        raw = row.get("source_index")
+        if raw is None or str(raw).strip() == "":
+            continue
+        seen.add(int(raw))
+    return sorted(seen)
+
+
+def _eval_label_for_folder(config: dict[str, Any], folder: str) -> str | None:
+    for label, mapped in dict(deep_get(config, "data.test_sets", {})).items():
+        if str(mapped) == str(folder):
+            return str(label)
+    return None
+
+
+def clean_train_val_indices(config: dict[str, Any], train_folder: str) -> tuple[list[int], list[int]]:
+    base = clean_manifest_dir(config)
+    train = _manifest_indices(_read_manifest_rows(base / CLEAN_TRAIN_MANIFEST), train_folder)
+    val = _manifest_indices(_read_manifest_rows(base / CLEAN_VAL_MANIFEST), train_folder)
+    return train, val
+
+
+def clean_eval_indices(config: dict[str, Any], folder: str) -> list[int] | None:
+    """Clean LMDB indices for an evaluation folder, or None when folder is not an eval set."""
+    label = _eval_label_for_folder(config, folder)
+    if label is None:
+        return None
+    base = clean_manifest_dir(config)
+    csv_path = base / f"clean_eval_{label}_manifest.csv"
+    return _manifest_indices(_read_manifest_rows(csv_path), folder)
+
+
+def clean_manifest_pair_lists(
+    config: dict[str, Any], train_folder: str
+) -> tuple[list[str], list[str], dict[str, list[str]]]:
+    """Raw (non-deduplicated) pair_sha256 lists for train, validation, and each eval split."""
+    base = clean_manifest_dir(config)
+
+    def pair_hashes(csv_path: Path, folder: str) -> list[str]:
+        return [
+            str(row.get("pair_sha256", ""))
+            for row in _read_manifest_rows(csv_path)
+            if row.get("source_dataset_name") == folder and row.get("pair_sha256")
+        ]
+
+    train = pair_hashes(base / CLEAN_TRAIN_MANIFEST, train_folder)
+    val = pair_hashes(base / CLEAN_VAL_MANIFEST, train_folder)
+    evals: dict[str, list[str]] = {}
+    for label, folder in dict(deep_get(config, "data.test_sets", {})).items():
+        csv_path = base / f"clean_eval_{label}_manifest.csv"
+        if csv_path.exists():
+            evals[str(label)] = pair_hashes(csv_path, str(folder))
+    return train, val, evals
+
+
 def discover_indices(config: dict[str, Any], folder: str) -> list[int]:
+    if use_clean_manifest(config):
+        eval_indices = clean_eval_indices(config, folder)
+        if eval_indices is not None:
+            return eval_indices
+        train_sets = list(deep_get(config, "data.train_sets", []) or [])
+        if train_sets and str(folder) == str(train_sets[0]):
+            train_idx, val_idx = clean_train_val_indices(config, folder)
+            return sorted(set(train_idx) | set(val_idx))
     if bool(deep_get(config, "data.synthetic.enabled", False)):
         counts = deep_get(config, "data.synthetic.counts", {})
         short = folder.replace("DocTamperV1-", "")

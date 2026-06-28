@@ -6,7 +6,15 @@ from pathlib import Path
 from typing import Any
 
 from .config import deep_get, deep_set, dump_config, load_config, resolve_output_paths
-from .datasets import discover_indices, export_dataset_index, make_data_loader, make_dataset
+from .datasets import (
+    clean_manifest_pair_lists,
+    clean_train_val_indices,
+    discover_indices,
+    export_dataset_index,
+    make_data_loader,
+    make_dataset,
+    use_clean_manifest,
+)
 from .gpu import amp_dtype_for_torch, autotune_batch_size, cuda_memory_snapshot, resolve_runtime, write_gpu_profile
 from .losses import BCEDiceLoss
 from .metrics import StreamingBinaryMetrics
@@ -105,15 +113,21 @@ def run_train(config_path: str | Path, resume: str | None = None, batch_size: in
         logger(f"Selected batch size: {selected_batch_size}")
 
         train_folder = deep_get(resolved_config, "data.train_sets", [TRAINING_DATASET])[0]
-        all_indices = discover_indices(resolved_config, train_folder)
-        split = create_or_load_split(
-            all_indices,
-            run_dir,
-            seed=int(deep_get(resolved_config, "split.seed", 42)),
-            val_count=int(deep_get(resolved_config, "split.val_count", 10000)),
-            source_folder=train_folder,
-        )
-        logger(f"Split: train={len(split.train_indices)} val={len(split.val_indices)}")
+        if use_clean_manifest(resolved_config):
+            train_indices, val_indices = clean_train_val_indices(resolved_config, train_folder)
+            _write_clean_manifest_sanity_report(resolved_config, train_folder, run_dir, logger)
+            logger(f"Clean-manifest split: train={len(train_indices)} val={len(val_indices)}")
+        else:
+            all_indices = discover_indices(resolved_config, train_folder)
+            split = create_or_load_split(
+                all_indices,
+                run_dir,
+                seed=int(deep_get(resolved_config, "split.seed", 42)),
+                val_count=int(deep_get(resolved_config, "split.val_count", 10000)),
+                source_folder=train_folder,
+            )
+            train_indices, val_indices = split.train_indices, split.val_indices
+            logger(f"Split: train={len(train_indices)} val={len(val_indices)}")
 
         test_counts = {
             label: len(discover_indices(resolved_config, folder))
@@ -121,8 +135,8 @@ def run_train(config_path: str | Path, resume: str | None = None, batch_size: in
         }
         write_leakage_report(
             root / "leakage_check_report.md",
-            len(split.train_indices),
-            len(split.val_indices),
+            len(train_indices),
+            len(val_indices),
             test_counts,
             train_val_overlap=0,
         )
@@ -132,17 +146,54 @@ def run_train(config_path: str | Path, resume: str | None = None, batch_size: in
         _assert_model_contract(summary_model, resolved_config, runtime, logger)
         del summary_model
 
-        index_rows = _dataset_index_rows(resolved_config, split.train_indices, split.val_indices)
+        index_rows = _dataset_index_rows(resolved_config, train_indices, val_indices)
         export_dataset_index(run_dir / "dataset_index.csv", index_rows)
 
         if dummy_mode:
             _write_dummy_training_outputs(resolved_config, run_dir, resume, selected_batch_size, runtime, logger)
         else:
-            _torch_train(resolved_config, split.train_indices, split.val_indices, run_dir, selected_batch_size, resume, logger)
+            _torch_train(resolved_config, train_indices, val_indices, run_dir, selected_batch_size, resume, logger)
         logger("Training finished.")
         return run_dir / "checkpoints" / "best_model.pth"
     finally:
         logger.close()
+
+
+def _write_clean_manifest_sanity_report(
+    config: dict[str, Any], train_folder: str, run_dir: Path, log: "TrainingLogger"
+) -> None:
+    """Verify pair_sha256 isolation of the clean manifests and persist the evidence.
+
+    The precomputed clean archive already guarantees these properties; this re-checks them
+    at runtime and fails fast if the wired-in archive is inconsistent.
+    """
+    train, val, evals = clean_manifest_pair_lists(config, train_folder)
+    train_set, val_set = set(train), set(val)
+    duplicate_in_train = len(train) - len(train_set)
+    train_val_overlap = len(train_set & val_set)
+    train_eval_overlap = {label: len(train_set & set(hashes)) for label, hashes in evals.items()}
+    passed = (
+        duplicate_in_train == 0
+        and train_val_overlap == 0
+        and all(count == 0 for count in train_eval_overlap.values())
+    )
+    report = {
+        "train_rows": len(train),
+        "val_rows": len(val),
+        "eval_rows": {label: len(hashes) for label, hashes in evals.items()},
+        "duplicate_pair_sha256_in_train": duplicate_in_train,
+        "train_val_pair_overlap": train_val_overlap,
+        "train_eval_pair_overlap": train_eval_overlap,
+        "clean_manifest_dir": str(deep_get(config, "data.clean_manifest_dir", "")),
+        "passed": passed,
+    }
+    write_json(run_dir / "clean_manifest_sanity_report.json", report)
+    if not passed:
+        raise RuntimeError(f"Clean-manifest sanity check failed: {report}")
+    log(
+        "Clean-manifest sanity OK: "
+        f"train={len(train)} val={len(val)} eval={report['eval_rows']}"
+    )
 
 
 def _dataset_index_rows(config: dict[str, Any], train_indices: list[int], val_indices: list[int]) -> list[dict[str, Any]]:
