@@ -147,7 +147,7 @@ def _predict_batch(model, batch: list[dict[str, Any]], config: dict[str, Any], r
         with torch.inference_mode():
             with torch.amp.autocast("cuda", dtype=amp_dtype, enabled=runtime["device"] == "cuda"):
                 logits = model(x)
-            probs = torch.sigmoid(logits).detach().cpu().numpy()[:, 0]
+            probs = torch.sigmoid(logits).float().detach().cpu().numpy()[:, 0]
         return [probs[i] for i in range(probs.shape[0])]
     except Exception as exc:
         raise RuntimeError(f"Model inference failed: {exc}") from exc

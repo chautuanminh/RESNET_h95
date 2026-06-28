@@ -436,8 +436,8 @@ def _torch_train(
                 running_loss += float(raw_loss.detach().cpu().item())
                 batches += 1
                 images += batch_size_actual
-                probs = torch.sigmoid(logits).detach().cpu().numpy()
-                labels = y.detach().cpu().numpy()
+                probs = torch.sigmoid(logits).float().detach().cpu().numpy()
+                labels = y.float().detach().cpu().numpy()
                 train_stream.update(probs, labels)
                 if step % log_interval == 0 or step == len(train_loader):
                     elapsed = max(1e-8, time.perf_counter() - epoch_start)
@@ -548,8 +548,8 @@ def _torch_validate(model, loader, device, runtime: dict[str, Any], amp_dtype, c
             running_loss += float(loss.detach().cpu().item())
             batches += 1
             images += int(x.shape[0])
-            probs = torch.sigmoid(logits).detach().cpu().numpy()
-            labels = y.detach().cpu().numpy()
+            probs = torch.sigmoid(logits).float().detach().cpu().numpy()
+            labels = y.float().detach().cpu().numpy()
             stream.update(probs, labels)
             del x, y, logits, loss, probs, labels
     elapsed = max(1e-8, time.perf_counter() - start)
